@@ -644,7 +644,17 @@ export class ManimSideview {
       }
 
       if (getUserConfiguration("preview")) {
-        this.mediaPlayer.playMedia(filePath, config, mediaInfo.fileType);
+        // Detect a companion audio file (WAV/MP3) for background playback.
+        const audioUri = this.findAudioFile(
+          filePath.fsPath,
+          config.srcRootFolder,
+        );
+        this.mediaPlayer.playMedia(
+          filePath,
+          config,
+          mediaInfo.fileType,
+          audioUri,
+        );
       }
 
       // Execute post-render terminal command if configured
@@ -852,6 +862,62 @@ export class ManimSideview {
       document: document,
       sceneName: sceneName,
     };
+  }
+
+  /**
+   * Finds a companion audio file alongside the rendered video.
+   * Strategies:
+   * 1. WAV alongside the video (manim's native audio output)
+   * 2. MP3 alongside the video
+   * 3. Search media/voiceovers/ for MP3/WAV files
+   */
+  private findAudioFile(
+    videoPath: string,
+    srcRootFolder: string,
+  ): vscode.Uri | undefined {
+    if (!getUserConfiguration<boolean>("enableAudio")) {
+      return;
+    }
+
+    // Strategy 1: WAV alongside the video (manim's native audio output)
+    const wavPath = videoPath.replace(/\.mp4$/i, ".wav");
+    if (fs.existsSync(wavPath)) {
+      Log.info(`Found audio WAV at "${wavPath}".`);
+      return vscode.Uri.file(wavPath);
+    }
+
+    // Strategy 2: MP3 alongside the video
+    const mp3Path = videoPath.replace(/\.mp4$/i, ".mp3");
+    if (fs.existsSync(mp3Path)) {
+      Log.info(`Found audio MP3 at "${mp3Path}".`);
+      return vscode.Uri.file(mp3Path);
+    }
+
+    // Strategy 3: Search media/voiceovers/ for MP3/WAV files
+    const voiceoversDir = path.join(srcRootFolder, "media", "voiceovers");
+    if (fs.existsSync(voiceoversDir)) {
+      try {
+        const sceneName = path.basename(videoPath, ".mp4");
+        const files = fs.readdirSync(voiceoversDir);
+        // Prefer exact scene name match, then partial match
+        for (const file of files) {
+          const ext = path.extname(file).toLowerCase();
+          if (ext !== ".mp3" && ext !== ".wav") {
+            continue;
+          }
+          const baseName = path.basename(file, ext);
+          if (baseName === sceneName || baseName.startsWith(sceneName)) {
+            const fullPath = path.join(voiceoversDir, file);
+            Log.info(`Found voiceover audio at "${fullPath}".`);
+            return vscode.Uri.file(fullPath);
+          }
+        }
+      } catch {
+        // voiceovers dir exists but can't be read — skip silently
+      }
+    }
+
+    return;
   }
 
   private async checkExecutableExists(path: string): Promise<boolean> {

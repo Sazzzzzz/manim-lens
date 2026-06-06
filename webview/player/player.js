@@ -1,20 +1,22 @@
 const vscode = acquireVsCodeApi();
 
-// --- Get DOM Elements ---
+// --- DOM Elements ---
 const mediaContainer = document.querySelector(".media-container");
 const videoPlayer = document.getElementById("video-media-player");
 const video = document.getElementById("video-preview");
 const imagePlayer = document.getElementById("image-media-player");
 const image = document.getElementById("image-preview");
+const audioTrack = document.getElementById("audio-track");
 
 // Controls
 const controlsContainer = document.querySelector(".controls-container");
 const progressBar = document.querySelector(".progress-bar");
 const progressBarBackground = document.querySelector(
-  ".progress-bar-background"
+  ".progress-bar-background",
 );
 const progressFill = document.querySelector(".color-fill");
-const seekTooltip = document.querySelector(".demo-fill"); // Renamed for clarity
+const seekTooltip = document.querySelector(".demo-fill");
+const volumeContainer = document.querySelector(".volume-container");
 
 // Buttons
 const playPauseButton = document.getElementById("play-pause-button");
@@ -31,50 +33,200 @@ const pipButton = document.getElementById("pip-button");
 const fullscreenButton = document.getElementById("fullscreen-button");
 const fullscreenEnterIcon = document.getElementById("fullscreen-enter-icon");
 const fullscreenExitIcon = document.getElementById("fullscreen-exit-icon");
-const renderButton = document.getElementById("render-button"); // New ID
+const renderButton = document.getElementById("render-button");
 
-// Displays & Details
+// Displays
 const timeDisplay = document.getElementById("time-display");
 const moduleNameDisplay = document.getElementById("module-name");
 const outputFileDisplay = document.getElementById("output-file");
 const sourceFileDisplay = document.getElementById("source-file");
 
-// --- State Variables ---
+// --- State ---
 let isVideoMode = !videoPlayer.hidden;
+let hasAudio = true;
 let controlsTimeout;
 let wasPausedBeforeSeek = false;
 
-// --- Helper Functions ---
+// ============================================================
+// PlaybackController — single source of truth for play/seek/volume
+// ============================================================
+const controller = {
+  get hasAudio() {
+    return hasAudio && !audioTrack.hidden && audioTrack.src;
+  },
+
+  getDuration() {
+    let max = video.duration || 0;
+    if (this.hasAudio && audioTrack.duration && !isNaN(audioTrack.duration)) {
+      max = Math.max(max, audioTrack.duration);
+    }
+    return max;
+  },
+
+  getCurrentTime() {
+    // When video ended but audio still plays, track audio position
+    if (video.ended && this.hasAudio && !audioTrack.ended) {
+      return audioTrack.currentTime;
+    }
+    return video.currentTime;
+  },
+
+  play() {
+    if (!isVideoMode) return;
+    if (this.hasAudio && !audioTrack.paused) {
+      // already playing audio — just ensure video is playing
+    }
+    video.play();
+    if (this.hasAudio) {
+      // Sync audio to video position before playing, in case of drift
+      audioTrack.currentTime = video.currentTime;
+      audioTrack.play().catch((err) => console.log("Audio play failed:", err));
+    }
+  },
+
+  pause() {
+    video.pause();
+    if (this.hasAudio) {
+      audioTrack.pause();
+    }
+  },
+
+  seek(ratio) {
+    const maxDuration = this.getDuration();
+    if (isNaN(maxDuration) || maxDuration <= 0) return;
+    const targetTime = ratio * maxDuration;
+    video.currentTime = Math.min(targetTime, video.duration || 0);
+    if (this.hasAudio && !isNaN(audioTrack.duration)) {
+      audioTrack.currentTime = Math.min(targetTime, audioTrack.duration);
+    }
+  },
+
+  skip(seconds) {
+    if (isNaN(video.duration)) return;
+    video.currentTime += seconds;
+    if (this.hasAudio && !isNaN(audioTrack.duration)) {
+      audioTrack.currentTime += seconds;
+    }
+  },
+
+  setVolume(value) {
+    const vol = Math.max(0, Math.min(1, value));
+    if (this.hasAudio) {
+      audioTrack.volume = vol;
+      audioTrack.muted = vol === 0;
+    } else {
+      video.volume = vol;
+      video.muted = vol === 0;
+    }
+  },
+
+  toggleMute() {
+    if (this.hasAudio) {
+      audioTrack.muted = !audioTrack.muted;
+      if (!audioTrack.muted && audioTrack.volume === 0) {
+        audioTrack.volume = 0.1;
+      }
+    } else {
+      video.muted = !video.muted;
+      if (!video.muted && video.volume === 0) {
+        video.volume = 0.1;
+      }
+    }
+  },
+
+  setSpeed(speed) {
+    video.playbackRate = speed;
+    if (this.hasAudio) {
+      audioTrack.playbackRate = speed;
+    }
+    speedButton.textContent = `${speed}x`;
+    speedOptionsList.querySelectorAll("li").forEach((li) => {
+      li.classList.toggle("active", parseFloat(li.dataset.value) === speed);
+    });
+  },
+
+  setLoop(loop) {
+    video.loop = loop;
+    if (this.hasAudio) {
+      audioTrack.loop = loop;
+    }
+  },
+
+  isMuted() {
+    return this.hasAudio ? audioTrack.muted : video.muted;
+  },
+
+  getVolume() {
+    return this.hasAudio ? audioTrack.volume : video.volume;
+  },
+};
+
+// ============================================================
+// Drift correction — every 500ms, nudge audio to match video
+// ============================================================
+let driftInterval = null;
+
+function startDriftCorrection() {
+  stopDriftCorrection();
+  driftInterval = setInterval(() => {
+    if (!controller.hasAudio) return;
+    if (video.paused || video.ended) return;
+    const drift = Math.abs(video.currentTime - audioTrack.currentTime);
+    if (drift > 0.1) {
+      audioTrack.currentTime = video.currentTime;
+    }
+  }, 500);
+}
+
+function stopDriftCorrection() {
+  if (driftInterval) {
+    clearInterval(driftInterval);
+    driftInterval = null;
+  }
+}
+
+// ============================================================
+// UI Helpers
+// ============================================================
 
 function formatTime(timeInSeconds) {
-  const result = new Date(timeInSeconds * 1000).toISOString().slice(14, 19); // MM:SS format
-  return result;
+  if (isNaN(timeInSeconds) || !isFinite(timeInSeconds)) return "0:00";
+  const mins = Math.floor(timeInSeconds / 60);
+  const secs = Math.floor(timeInSeconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function updateProgressAndTime() {
+  const maxDuration = controller.getDuration();
+  if (isNaN(maxDuration) || maxDuration <= 0) return;
+  const currentTime = controller.getCurrentTime();
+  const progressPercent = (currentTime / maxDuration) * 100;
+  progressFill.style.width = `${progressPercent}%`;
+  timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(maxDuration)}`;
 }
 
 function updatePlayPauseIcon() {
   if (video.paused) {
     playIcon.style.display = "block";
     pauseIcon.style.display = "none";
-    // Keep controls visible when paused
     controlsContainer.classList.add("visible");
     clearTimeout(controlsTimeout);
   } else {
     playIcon.style.display = "none";
     pauseIcon.style.display = "block";
-    // Hide controls after delay when playing
     hideControlsWithDelay();
   }
 }
 
 function updateVolumeIcon() {
-  if (video.muted || video.volume === 0) {
+  if (controller.isMuted() || controller.getVolume() === 0) {
     volumeHighIcon.style.display = "none";
     volumeMutedIcon.style.display = "block";
     volumeSlider.value = 0;
   } else {
     volumeHighIcon.style.display = "block";
     volumeMutedIcon.style.display = "none";
-    volumeSlider.value = video.volume; // Sync slider
+    volumeSlider.value = controller.getVolume();
   }
 }
 
@@ -88,12 +240,15 @@ function updateFullscreenIcon() {
   }
 }
 
+function updateLoopUI(loop) {
+  loopButton.classList.toggle("active", loop);
+  loopButton.style.backgroundColor = loop ? "rgba(255, 255, 255, 0.3)" : "";
+}
+
 function hideControlsWithDelay() {
-  // Don't hide if video isn't the active element or if paused
   if (document.activeElement === video || !video.paused) {
     clearTimeout(controlsTimeout);
     controlsTimeout = setTimeout(() => {
-      // Check again in case state changed
       if (
         !video.paused &&
         document.activeElement !== video &&
@@ -102,7 +257,7 @@ function hideControlsWithDelay() {
       ) {
         controlsContainer.classList.remove("visible");
       }
-    }, 2000); // Hide after 2 seconds of inactivity
+    }, 2000);
   }
 }
 
@@ -111,60 +266,42 @@ function showControls() {
   controlsContainer.classList.add("visible");
 }
 
-// --- Core Functionality ---
+function showVolumeControls(visible) {
+  if (volumeContainer) {
+    volumeContainer.classList.toggle("hidden", !visible);
+  }
+}
+
+// ============================================================
+// Core actions (delegated to controller)
+// ============================================================
 
 function togglePlayPause() {
   if (!isVideoMode) return;
   if (video.paused) {
-    video.play();
+    controller.play();
+    startDriftCorrection();
   } else {
-    video.pause();
+    controller.pause();
+    stopDriftCorrection();
   }
   updatePlayPauseIcon();
 }
 
-function setVideoProgress(seekRatio) {
-  if (!isVideoMode || isNaN(video.duration)) return;
-  video.currentTime = seekRatio * video.duration;
-}
-
-function skip(duration) {
-  if (!isVideoMode || isNaN(video.duration)) return;
-  video.currentTime += duration;
-}
-
 function toggleMute() {
   if (!isVideoMode) return;
-  video.muted = !video.muted;
-  if (!video.muted && video.volume === 0) {
-    // Unmuting but volume was 0
-    video.volume = 0.1; // Set a small volume
-  }
+  controller.toggleMute();
   updateVolumeIcon();
 }
 
 function toggleLoop() {
   if (!isVideoMode) return;
-  video.loop = !video.loop;
-  // Visual feedback: Add/remove a class for styling
-  loopButton.classList.toggle("active", video.loop);
-  // Simple example: change background, define .active in CSS if needed
-  loopButton.style.backgroundColor = video.loop
-    ? "rgba(255, 255, 255, 0.3)"
-    : "";
+  const loop = !video.loop;
+  controller.setLoop(loop);
+  updateLoopUI(loop);
 }
 
-function setPlaybackSpeed(speed) {
-  if (!isVideoMode) return;
-  video.playbackRate = speed;
-  speedButton.textContent = `${speed}x`;
-  // Update active class on list items
-  speedOptionsList.querySelectorAll("li").forEach((li) => {
-    li.classList.toggle("active", parseFloat(li.dataset.value) === speed);
-  });
-}
-
-async function enterPictureInPicture() {
+function enterPictureInPicture() {
   if (!isVideoMode) {
     vscode.postMessage({
       command: "errorMessage",
@@ -174,9 +311,9 @@ async function enterPictureInPicture() {
   }
   try {
     if (document.pictureInPictureElement) {
-      await document.exitPictureInPicture();
+      document.exitPictureInPicture();
     } else {
-      await video.requestPictureInPicture();
+      video.requestPictureInPicture();
     }
   } catch (err) {
     console.error("PiP Error:", err);
@@ -210,217 +347,234 @@ function renderNew() {
   });
 }
 
-// --- Event Listeners ---
+// ============================================================
+// Event Listeners
+// ============================================================
 
-// Video Player Events
+// Video events
 video.addEventListener("loadedmetadata", () => {
-  if (!isNaN(video.duration)) {
-    timeDisplay.textContent = `${formatTime(0)} / ${formatTime(
-      video.duration
-    )}`;
-  }
-  updatePlayPauseIcon(); // Set initial icon
-  updateVolumeIcon(); // Set initial volume icon/slider
-  // Set initial loop button state
-  loopButton.classList.toggle("active", video.loop);
-  loopButton.style.backgroundColor = video.loop
-    ? "rgba(255, 255, 255, 0.3)"
-    : "";
+  updateLoopUI(video.loop);
+  updatePlayPauseIcon();
+  updateVolumeIcon();
 });
 
-video.addEventListener("play", updatePlayPauseIcon);
-video.addEventListener("pause", updatePlayPauseIcon);
-
-video.addEventListener("timeupdate", () => {
-  if (isNaN(video.duration)) return;
-  const progressPercent = (video.currentTime / video.duration) * 100;
-  progressFill.style.width = `${progressPercent}%`;
-  timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(
-    video.duration
-  )}`;
+video.addEventListener("play", () => {
+  updatePlayPauseIcon();
+  startDriftCorrection();
+});
+video.addEventListener("pause", () => {
+  updatePlayPauseIcon();
+  stopDriftCorrection();
 });
 
+video.addEventListener("timeupdate", updateProgressAndTime);
 video.addEventListener("volumechange", updateVolumeIcon);
+video.addEventListener("click", togglePlayPause);
 
-video.addEventListener("click", togglePlayPause); // Click on video toggles play/pause
+// When video ends but audio continues: freeze video, drive progress from audio
+video.addEventListener("ended", () => {
+  stopDriftCorrection();
+  updatePlayPauseIcon();
+});
 
-// Progress Bar Events
+// Audio events
+audioTrack.addEventListener("loadedmetadata", () => {
+  if (!controller.hasAudio) return;
+  updateProgressAndTime();
+});
+
+audioTrack.addEventListener("timeupdate", () => {
+  // Drive progress bar when audio outlasts video
+  if (!controller.hasAudio || !video.ended || audioTrack.ended) return;
+  updateProgressAndTime();
+});
+
+audioTrack.addEventListener("ended", () => {
+  stopDriftCorrection();
+});
+
+audioTrack.addEventListener("error", () => {
+  console.warn(
+    "Manim Sideview: Audio track failed to load. Playing video without audio.",
+  );
+  hasAudio = false;
+  showVolumeControls(false);
+});
+
+// Progress bar events
 progressBar.addEventListener("mousemove", (e) => {
-  if (!isVideoMode || isNaN(video.duration)) return;
+  const maxDuration = controller.getDuration();
+  if (!isVideoMode || isNaN(maxDuration) || maxDuration <= 0) return;
   const rect = progressBar.getBoundingClientRect();
   const seekRatio = Math.max(
     0,
-    Math.min(1, (e.clientX - rect.left) / rect.width)
+    Math.min(1, (e.clientX - rect.left) / rect.width),
   );
   seekTooltip.style.width = `${seekRatio * 100}%`;
 });
 
-progressBar.addEventListener("mouseleave", () => {
-  // Optionally hide seek tooltip when mouse leaves
-  // seekTooltip.style.width = `0%`;
-});
-
-progressBar.addEventListener("mousedown", (e) => {
-  if (!isVideoMode || isNaN(video.duration)) return;
+progressBar.addEventListener("mousedown", () => {
+  const maxDuration = controller.getDuration();
+  if (!isVideoMode || isNaN(maxDuration) || maxDuration <= 0) return;
   wasPausedBeforeSeek = video.paused;
-  if (!wasPausedBeforeSeek) video.pause(); // Pause while seeking for smoother experience
+  if (!wasPausedBeforeSeek) controller.pause();
 });
 
 progressBar.addEventListener("click", (e) => {
-  if (!isVideoMode || isNaN(video.duration)) return;
+  const maxDuration = controller.getDuration();
+  if (!isVideoMode || isNaN(maxDuration) || maxDuration <= 0) return;
   const rect = progressBar.getBoundingClientRect();
   const seekRatio = Math.max(
     0,
-    Math.min(1, (e.clientX - rect.left) / rect.width)
+    Math.min(1, (e.clientX - rect.left) / rect.width),
   );
-  setVideoProgress(seekRatio);
-  // Resume playing only if it was playing before starting the seek
+  controller.seek(seekRatio);
   if (!wasPausedBeforeSeek) {
-    // A small delay might be needed if the click causes immediate pause/play confusion
-    setTimeout(() => video.play(), 50);
+    setTimeout(() => controller.play(), 50);
   }
 });
 
-// Button Events
+// Button events
 playPauseButton.addEventListener("click", togglePlayPause);
 volumeButton.addEventListener("click", toggleMute);
 volumeSlider.addEventListener("input", (e) => {
   if (!isVideoMode) return;
-  video.volume = e.target.value;
-  video.muted = video.volume === 0; // Mute if slider dragged to 0
-  updateVolumeIcon(); // Update icon immediately
+  controller.setVolume(e.target.value);
+  updateVolumeIcon();
 });
 loopButton.addEventListener("click", toggleLoop);
 pipButton.addEventListener("click", enterPictureInPicture);
 fullscreenButton.addEventListener("click", toggleFullscreen);
 renderButton.addEventListener("click", renderNew);
 
-// Playback Speed Selection
+// Speed selection
 speedOptionsList.addEventListener("click", (e) => {
   if (e.target.tagName === "LI") {
-    const speed = parseFloat(e.target.dataset.value);
-    setPlaybackSpeed(speed);
+    controller.setSpeed(parseFloat(e.target.dataset.value));
   }
 });
 
-// Controls Visibility Events
+// Controls visibility
 mediaContainer.addEventListener("mouseenter", showControls);
 mediaContainer.addEventListener("mousemove", () => {
   showControls();
-  if (!video.paused) {
-    hideControlsWithDelay();
-  }
+  if (!video.paused) hideControlsWithDelay();
 });
 mediaContainer.addEventListener("mouseleave", () => {
-  // Start hide timer immediately if not paused and focus isn't inside
   if (!video.paused && !controlsContainer.matches(":hover")) {
     hideControlsWithDelay();
   }
 });
-controlsContainer.addEventListener("mouseenter", showControls); // Keep visible if mouse enters controls
+controlsContainer.addEventListener("mouseenter", showControls);
 controlsContainer.addEventListener("mouseleave", () => {
-  // Hide when mouse leaves controls (if appropriate)
-  if (!video.paused) {
-    hideControlsWithDelay();
-  }
+  if (!video.paused) hideControlsWithDelay();
 });
 
-// Fullscreen Change Event (handles Esc key)
+// Fullscreen change
 document.addEventListener("fullscreenchange", updateFullscreenIcon);
-document.addEventListener("webkitfullscreenchange", updateFullscreenIcon); // Safari
+document.addEventListener("webkitfullscreenchange", updateFullscreenIcon);
 
-// Keyboard Shortcuts
+// Keyboard shortcuts
 window.addEventListener("keydown", (e) => {
-  // Ignore shortcuts if typing in an input, textarea, etc.
   const targetTagName = document.activeElement.tagName.toLowerCase();
   if (targetTagName === "input" || targetTagName === "textarea") return;
 
-  // Allow focus styles without triggering actions immediately
   if (
     [" ", "Enter"].includes(e.key) &&
     document.activeElement.classList.contains("control-button")
   ) {
-    // Let the button's click handler manage the action
     return;
   }
 
   switch (e.key.toLowerCase()) {
-    case " ": // Space bar
-      e.preventDefault(); // Prevent page scroll
+    case " ":
+      e.preventDefault();
       togglePlayPause();
       break;
-    case "m": // Mute
+    case "m":
       toggleMute();
       break;
-    case "l": // Loop
+    case "l":
       toggleLoop();
       break;
-    case "f": // Fullscreen
+    case "f":
       toggleFullscreen();
       break;
-    case "arrowleft": // Seek back
-      skip(-5); // Skip 5 seconds back
+    case "arrowleft":
+      controller.skip(-5);
       break;
-    case "arrowright": // Seek forward
-      skip(5); // Skip 5 seconds forward
+    case "arrowright":
+      controller.skip(5);
       break;
   }
 });
 
-// --- VS Code Message Handling ---
+// ============================================================
+// VS Code Message Handling
+// ============================================================
 window.addEventListener("message", (e) => {
   const message = e.data;
   switch (message.command) {
     case "reload":
+      stopDriftCorrection();
+
       outputFileDisplay.innerText = message.outputFile;
       moduleNameDisplay.innerText = message.moduleName;
       sourceFileDisplay.innerText = message.sourceFile;
-
-      // Add titles dynamically in case paths change (optional, but good practice)
       outputFileDisplay.title = `Click to reveal ${message.outputFile} in Explorer`;
       sourceFileDisplay.title = `Click to open ${message.sourceFile}`;
 
-      isVideoMode = message.mediaType !== 1; // 1 is image type
+      isVideoMode = message.mediaType !== 1;
+      hasAudio = message.hasAudio === true;
       videoPlayer.hidden = !isVideoMode;
       imagePlayer.hidden = isVideoMode;
 
-      // Reset controls based on type
-      controlsContainer.style.display = isVideoMode ? "" : "none"; // Hide controls for images
+      showVolumeControls(hasAudio);
+      controlsContainer.style.display = isVideoMode ? "" : "none";
+
+      // Reset audio track
+      if (hasAudio && message.audioResource) {
+        audioTrack.removeAttribute("hidden");
+        audioTrack.setAttribute("src", message.audioResource);
+        audioTrack.load();
+        audioTrack.volume = 1;
+        audioTrack.muted = false;
+      } else {
+        audioTrack.setAttribute("hidden", "");
+        audioTrack.removeAttribute("src");
+      }
 
       if (isVideoMode) {
         video.setAttribute("src", message.resource);
-        video.removeAttribute("poster"); // Ensure no poster interferes
-        video.load(); // Important to load new source
-        // Autoplay might be handled by the {{ autoplay }} attribute,
-        // but explicitly calling play ensures it tries if allowed.
-        video.play().catch((err) => console.log("Autoplay prevented:", err)); // Play new video (browser might block)
-        // Reset state for new video
-        video.loop = message.loop; // Assuming loop state comes from extension
-        setPlaybackSpeed(1); // Reset speed
+        video.removeAttribute("poster");
+        video.load();
+        video.play().catch((err) => console.log("Autoplay prevented:", err));
+        controller.setSpeed(1);
         updatePlayPauseIcon();
         updateVolumeIcon();
-        timeDisplay.textContent = `0:00 / 0:00`;
-        progressFill.style.width = `0%`;
-        updateFullscreenIcon(); // Update in case state changed externally
+        timeDisplay.textContent = "0:00 / 0:00";
+        progressFill.style.width = "0%";
+        updateFullscreenIcon();
+        startDriftCorrection();
       } else {
         image.setAttribute("src", message.resource);
-        // Ensure video is paused if switching away
         video.pause();
       }
       break;
   }
 });
 
-// --- Initial Setup ---
+// ============================================================
+// Initial setup
+// ============================================================
 updatePlayPauseIcon();
 updateVolumeIcon();
-updateFullscreenIcon(); // Set initial fullscreen icon state
-setPlaybackSpeed(1); // Set initial speed text/state
+updateFullscreenIcon();
+controller.setSpeed(1);
 
-// Show controls initially if video is preloaded/autoplayed potentially
 if (isVideoMode) {
   showControls();
-  hideControlsWithDelay(); // Start the timer if playing
+  hideControlsWithDelay();
 } else {
-  controlsContainer.style.display = "none"; // Ensure controls are hidden for images
+  controlsContainer.style.display = "none";
 }

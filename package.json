@@ -97,6 +97,11 @@
           "type": "boolean",
           "default": "true",
           "description": "Show a checkered background behind the video preview."
+        },
+        "manim-sideview.enableAudio": {
+          "type": "boolean",
+          "default": "true",
+          "description": "Play audio from a separate WAV/MP3 file alongside the video preview. The WAV is generated alongside the MP4 by manim, or an MP3 from the media/voiceovers folder by manim-voiceover."
         }
       }
     },
