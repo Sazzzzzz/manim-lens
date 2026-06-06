@@ -81,7 +81,7 @@ function quoteSpecialChars(text: string): string {
 export class ManimSideview {
   constructor(
     public readonly ctx: vscode.ExtensionContext,
-    public readonly pythonApi: PythonExtension
+    public readonly pythonApi: PythonExtension,
   ) {
     this.ctx = ctx;
     this.pythonApi = pythonApi;
@@ -89,7 +89,7 @@ export class ManimSideview {
     this.ctx.subscriptions.push(this.jobManager.getItem());
     this.mediaPlayer = new MediaPlayer(
       this.ctx.extensionUri,
-      this.ctx.subscriptions
+      this.ctx.subscriptions,
     );
     this.gallery = new Gallery(this.ctx.extensionUri, this.ctx.subscriptions);
   }
@@ -118,13 +118,13 @@ export class ManimSideview {
   async cmdRun(srcPath?: vscode.Uri | string, autoRun?: boolean) {
     let activeJob = srcPath
       ? this.jobManager.getActiveJob(
-        typeof srcPath === "string" ? srcPath : srcPath.fsPath
-      )!
+          typeof srcPath === "string" ? srcPath : srcPath.fsPath,
+        )!
       : null;
 
     if (autoRun === true && !activeJob) {
       Log.info(
-        `Ignoring auto-run of ${srcPath} for lack of a first time manual run`
+        `Ignoring auto-run of ${srcPath} for lack of a first time manual run`,
       );
       return;
     }
@@ -140,8 +140,8 @@ export class ManimSideview {
         if (!autoRun) {
           vscode.window.showErrorMessage(
             Log.error(
-              "Manim Sideview: You need to select a valid Python source file."
-            )
+              "Manim Sideview: You need to select a valid Python source file.",
+            ),
           );
         }
         return;
@@ -161,8 +161,8 @@ export class ManimSideview {
         // notify config file loading for the first time
         vscode.window.showInformationMessage(
           Log.info(
-            "Manim Sideview: Loaded a configuration file from the working directory."
-          )
+            "Manim Sideview: Loaded a configuration file from the working directory.",
+          ),
         );
       }
     } else {
@@ -183,13 +183,13 @@ export class ManimSideview {
       }
 
       Log.info(
-        `Asked user for a new scene name and recieved "${newSceneName}".`
+        `Asked user for a new scene name and recieved "${newSceneName}".`,
       );
       currentRunningConfig = this.createRunningConfig(
         document,
         newSceneName,
         isConfFile,
-        manimConfig
+        manimConfig,
       );
     }
 
@@ -240,8 +240,8 @@ export class ManimSideview {
     if (!job) {
       vscode.window.showErrorMessage(
         Log.error(
-          "Manim Sideview: Select a Python file first to render a new scene!"
-        )
+          "Manim Sideview: Select a Python file first to render a new scene!",
+        ),
       );
       return;
     }
@@ -258,13 +258,15 @@ export class ManimSideview {
   }
 
   private async getRenderSceneName(
-    srcFileUri: vscode.Uri
+    srcFileUri: vscode.Uri,
   ): Promise<string | undefined> {
     Log.info(`Fetching the scene name for probably render file ${srcFileUri}.`);
 
     if (!fs.existsSync(srcFileUri.fsPath)) {
       vscode.window.showWarningMessage(
-        Log.warn(`Manim Sideview: Source file "${srcFileUri.fsPath}" does not exist.`)
+        Log.warn(
+          `Manim Sideview: Source file "${srcFileUri.fsPath}" does not exist.`,
+        ),
       );
       return;
     }
@@ -274,7 +276,7 @@ export class ManimSideview {
       .replace(/\r|\n/g, "");
 
     const sceneClasses = [...contents.matchAll(RE_SCENE_CLASS)].map(
-      (m) => `$(run-all) ${m.groups?.name}`
+      (m) => `$(run-all) ${m.groups?.name}`,
     );
     const moreOption = "I'll provide it myself!";
 
@@ -287,7 +289,7 @@ export class ManimSideview {
         if (sceneClasses.includes(decorlastChosenSceneName)) {
           sceneClasses.splice(
             sceneClasses.indexOf(decorlastChosenSceneName),
-            1
+            1,
           );
           sceneClasses.push(`$(refresh) ${lastChosenSceneName}`);
         }
@@ -351,7 +353,9 @@ export class ManimSideview {
       fs.statSync(manimPath).isDirectory()
     ) {
       manimPath = path.join(manimPath, "manim");
-      Log.info(`Configured manim path was a directory; resolved to "${manimPath}".`);
+      Log.info(
+        `Configured manim path was a directory; resolved to "${manimPath}".`,
+      );
     }
 
     if (!path.isAbsolute(manimPath)) {
@@ -371,16 +375,18 @@ export class ManimSideview {
         } else if (env.environment) {
           let bin =
             PYTHON_ENV_SCRIPTS_FOLDER[
-            process.platform as keyof typeof PYTHON_ENV_SCRIPTS_FOLDER
+              process.platform as keyof typeof PYTHON_ENV_SCRIPTS_FOLDER
             ];
           if (!bin) {
             Log.error(
-              "Manim Sideview: Unsupported platform for python environment. Assuming linux directory."
+              "Manim Sideview: Unsupported platform for python environment. Assuming linux directory.",
             );
             bin = PYTHON_ENV_SCRIPTS_FOLDER["linux"];
           }
           pythonBinDir = path.join(env.environment.folderUri.fsPath, bin);
-          Log.info(`No interpreter URI; falling back to env folder: ${pythonBinDir}`);
+          Log.info(
+            `No interpreter URI; falling back to env folder: ${pythonBinDir}`,
+          );
         }
 
         if (pythonBinDir) {
@@ -395,19 +401,19 @@ export class ManimSideview {
       if (await this.checkExecutableExists("manim")) {
         window.showWarningMessage(
           Log.warn(
-            `Manim Sideview: Executable not found at ${manimPath}, but found executable on PATH...`
-          )
+            `Manim Sideview: Executable not found at ${manimPath}, but found executable on PATH...`,
+          ),
         );
         manimPath = "manim";
       } else {
         const msg = Log.error(
-          `Manim Sideview: Manim is not found in PATH or at the specified location "${manimPath}". Please ensure manim is installed correctly or specify a valid path in settings.`
+          `Manim Sideview: Manim is not found in PATH or at the specified location "${manimPath}". Please ensure manim is installed correctly or specify a valid path in settings.`,
         );
         window.showErrorMessage(msg, "Go to Settings").then((selection) => {
           if (selection === "Go to Settings") {
             vscode.commands.executeCommand(
               "workbench.action.openSettings",
-              "manim-sideview.defaultManimPath"
+              "manim-sideview.defaultManimPath",
             );
           }
         });
@@ -420,8 +426,8 @@ export class ManimSideview {
   async cmdUpdateDefaultManimConfig() {
     vscode.window.showInformationMessage(
       Log.info(
-        "Manim Sideview: Preparing to sync fallback manim configurations..."
-      )
+        "Manim Sideview: Preparing to sync fallback manim configurations...",
+      ),
     );
     const process = spawn((await this.getManimPath()).manim, ["cfg", "show"]);
 
@@ -450,7 +456,7 @@ export class ManimSideview {
       });
       updateFallbackManimCfg(cfgOptions);
       vscode.window.showInformationMessage(
-        "Manim Sideview: Successfully updated internal defaults for manim.cfg files."
+        "Manim Sideview: Successfully updated internal defaults for manim.cfg files.",
       );
     });
   }
@@ -475,7 +481,7 @@ export class ManimSideview {
     outputPath: string,
     srcPath: string,
     sceneName: string,
-    cwd: string
+    cwd: string,
   ) {
     const terminalCommand = getUserConfiguration<string>("terminalCommand");
     const commandInput = insertContext(
@@ -484,11 +490,11 @@ export class ManimSideview {
         "{sourcePath}": srcPath,
         "{sceneName}": sceneName,
       },
-      terminalCommand
+      terminalCommand,
     );
 
     let cli = vscode.window.terminals.find(
-      (t) => t.name === DefaultTerminalName
+      (t) => t.name === DefaultTerminalName,
     );
     if (!cli) {
       cli = vscode.window.createTerminal({
@@ -501,7 +507,9 @@ export class ManimSideview {
     } else {
       cli.sendText(`cd "${cwd}"`);
     }
-    Log.info(`Executing post-render command "${commandInput}" in terminal "${cli.name}".`);
+    Log.info(
+      `Executing post-render command "${commandInput}" in terminal "${cli.name}".`,
+    );
     cli.sendText(commandInput);
   }
 
@@ -530,17 +538,17 @@ export class ManimSideview {
   private async render(config: RunningConfig) {
     Log.info(
       "Attempting to render via the running configuration " +
-      JSON.stringify(config, null, 4) +
-      ",\n" +
-      JSON.stringify(
-        {
-          cliArguments: this.getPreferenceArgs(),
-          predictedVideoOutputPath: getVideoOutputPath(config),
-          predictedImageOutputPath: getImageOutputPath(config, "{version}"),
-        },
-        null,
-        4
-      )
+        JSON.stringify(config, null, 4) +
+        ",\n" +
+        JSON.stringify(
+          {
+            cliArguments: this.getPreferenceArgs(),
+            predictedVideoOutputPath: getVideoOutputPath(config),
+            predictedImageOutputPath: getImageOutputPath(config, "{version}"),
+          },
+          null,
+          4,
+        ),
     );
 
     const cwd = config.srcRootFolder;
@@ -579,10 +587,10 @@ export class ManimSideview {
         const filePath = vscode.Uri.file(
           path.isAbsolute(resolvedPath)
             ? resolvedPath
-            : path.join(config.srcRootFolder, resolvedPath)
+            : path.join(config.srcRootFolder, resolvedPath),
         );
         Log.info(
-          `Predicted output file path is "${filePath.fsPath}" for "${config.sceneName}".`
+          `Predicted output file path is "${filePath.fsPath}" for "${config.sceneName}".`,
         );
 
         if (!fs.existsSync(filePath.fsPath)) {
@@ -590,26 +598,35 @@ export class ManimSideview {
             .showErrorMessage(
               Log.error(
                 `Manim Sideview: Predicted output file does not exist at "${filePath.fsPath}"` +
-                " Make sure that the designated video directories are reflected" +
-                " in the extension log."
+                  " Make sure that the designated video directories are reflected" +
+                  " in the extension log.",
               ),
-              "Show Log"
+              "Show Log",
             )
             .then((value?: String) =>
               value === "Show Log"
                 ? vscode.commands.executeCommand(
-                  "manim-sideview.showOutputChannel"
-                )
-                : null
+                    "manim-sideview.showOutputChannel",
+                  )
+                : null,
             );
           throw new Error(
-            "Manim Sideview: Predicted output file does not exist."
+            "Manim Sideview: Predicted output file does not exist.",
           );
         }
 
         if (getUserConfiguration("preview")) {
-          // we'll open a side view
-          this.mediaPlayer.playMedia(filePath, config, mediaInfo.fileType);
+          // Detect a companion audio file (WAV/MP3) for background playback.
+          const audioUri = this.findAudioFile(
+            filePath.fsPath,
+            config.srcRootFolder,
+          );
+          this.mediaPlayer.playMedia(
+            filePath,
+            config,
+            mediaInfo.fileType,
+            audioUri,
+          );
         }
 
         // we'll execute the post render terminal command if it exists
@@ -617,7 +634,7 @@ export class ManimSideview {
           filePath.fsPath,
           config.srcPath,
           config.sceneName,
-          cwd
+          cwd,
         );
 
         const job = this.jobManager.getActiveJob(config.srcPath);
@@ -628,12 +645,12 @@ export class ManimSideview {
             `New job added for "${config.srcPath}" as ${JSON.stringify(
               config,
               null,
-              4
-            )}`
+              4,
+            )}`,
           );
           this.jobManager.addJob(config, mediaInfo.fileType);
         }
-      }
+      },
     );
   }
 
@@ -653,7 +670,7 @@ export class ManimSideview {
     cwd: string,
     srcPath: string,
     sceneName: string,
-    onProcessClose: (m: MediaInfo) => void
+    onProcessClose: (m: MediaInfo) => void,
   ) {
     const startTime = new Date();
     const process = spawn(command, args, { cwd: cwd, shell: false });
@@ -681,7 +698,7 @@ export class ManimSideview {
     process.stderr.on("data", (data: { toString: () => string }) => {
       const dataStr = data.toString();
       Log.warn(
-        `[${process.pid}] Captured stderr output "${formatOutput(dataStr)}"`
+        `[${process.pid}] Captured stderr output "${formatOutput(dataStr)}"`,
       );
       this.outputChannel!.append(dataStr);
     });
@@ -699,14 +716,14 @@ export class ManimSideview {
 
         if (stdoutLogbook.includes(KILL_MSG)) {
           Log.error(
-            `[${process.pid}] Kill message is sent, ending the process.`
+            `[${process.pid}] Kill message is sent, ending the process.`,
           );
           this.outputChannel!.append(
             "\r\n" +
-            Log.error(
-              `[${process.pid}] Your selected scene name does not exist in the source file.`
-            ) +
-            "\r\n"
+              Log.error(
+                `[${process.pid}] Your selected scene name does not exist in the source file.`,
+              ) +
+              "\r\n",
           );
 
           this.cmdRemoveJob(srcPath);
@@ -726,22 +743,22 @@ export class ManimSideview {
         if (code === -4058) {
           vscode.window.showErrorMessage(
             Log.error(
-              `Manim Sideview: Unable to find the source file. Try opening the folder containing this file instead of a single file, or check file permissions.`
-            )
+              `Manim Sideview: Unable to find the source file. Try opening the folder containing this file instead of a single file, or check file permissions.`,
+            ),
           );
         } else if (code != 15) {
           // only show the error message if the process was not killed by us
           vscode.window
             .showErrorMessage(
               Log.error(
-                `Manim Sideview: Error rendering file (exit code ${code}). Check the output for more details.`
+                `Manim Sideview: Error rendering file (exit code ${code}). Check the output for more details.`,
               ),
-              "Show Logs"
+              "Show Logs",
             )
             .then((selection) => {
               if (selection === "Show Logs") {
                 vscode.commands.executeCommand(
-                  "manim-sideview.showOutputChannel"
+                  "manim-sideview.showOutputChannel",
                 );
               }
             });
@@ -750,13 +767,16 @@ export class ManimSideview {
 
       this.outputChannel!.appendLine(
         Log.info(
-          `[${process.pid
-          }] Execution returned code=${code} in ${timeElapsed} seconds ${code === 1 ? "returned signal " + signal : ""
-          } ${signal === "SIGTERM"
-            ? "Cause: An old process has been terminated due to a termination signal."
-            : ""
-          }`
-        ) + "\n"
+          `[${
+            process.pid
+          }] Execution returned code=${code} in ${timeElapsed} seconds ${
+            code === 1 ? "returned signal " + signal : ""
+          } ${
+            signal === "SIGTERM"
+              ? "Cause: An old process has been terminated due to a termination signal."
+              : ""
+          }`,
+        ) + "\n",
       );
 
       const isMainProcess = this.process && this.process.pid === process.pid;
@@ -775,14 +795,14 @@ export class ManimSideview {
       const mediaInfo = await this.getMediaFileInfo(
         stdoutLogbook,
         srcPath,
-        sceneName
+        sceneName,
       );
 
       onProcessClose(mediaInfo);
     });
 
     Log.info(
-      `[${process.pid}] Spawned a new process for executing "${commandString}".`
+      `[${process.pid}] Spawned a new process for executing "${commandString}".`,
     );
   }
 
@@ -796,13 +816,15 @@ export class ManimSideview {
   private async getMediaFileInfo(
     stdoutLogbook: string,
     srcPath: string,
-    sceneName: string
+    sceneName: string,
   ) {
     let fileType: number | undefined;
     let imageName: string | undefined;
     let mediaPath: string | undefined;
     const job = this.jobManager.getActiveJob(srcPath)!;
-    Log.info(`Attempting to determine the output file type for "${sceneName}".`);
+    Log.info(
+      `Attempting to determine the output file type for "${sceneName}".`,
+    );
 
     // the file output signifier
     const fileReSignifier = [...stdoutLogbook.matchAll(RE_FILE_READY)];
@@ -811,9 +833,10 @@ export class ManimSideview {
       // partial movie file plus a final entry for the merged output.
       const cleanPath = (p: string) => p.replace(/ |\r|\n/g, "");
       const imageEntry = fileReSignifier.find((m) =>
-        cleanPath(m.groups?.path ?? "").endsWith(".png")
+        cleanPath(m.groups?.path ?? "").endsWith(".png"),
       );
-      const fileIdentifier = imageEntry ?? fileReSignifier[fileReSignifier.length - 1];
+      const fileIdentifier =
+        imageEntry ?? fileReSignifier[fileReSignifier.length - 1];
       const fullPath = cleanPath(fileIdentifier.groups?.path ?? "");
       if (imageEntry) {
         fileType = PlayableMediaType.Image;
@@ -825,18 +848,19 @@ export class ManimSideview {
         mediaPath = fullPath;
       }
       Log.info(
-        `[${process.pid}] Render output is predicted as "${fileType === PlayableMediaType.Image ? "Image" : "Video"
-        }" at "${fullPath}".`
+        `[${process.pid}] Render output is predicted as "${
+          fileType === PlayableMediaType.Image ? "Image" : "Video"
+        }" at "${fullPath}".`,
       );
     } else {
       // Probe both predicted paths on disk and pick whichever exists.
       const predictedVideo = path.join(
         job.config.srcRootFolder,
-        getVideoOutputPath(job.config)
+        getVideoOutputPath(job.config),
       );
       const predictedImage = path.join(
         job.config.srcRootFolder,
-        getImageOutputPath(job.config)
+        getImageOutputPath(job.config),
       );
       const videoMtime = fs.existsSync(predictedVideo)
         ? fs.statSync(predictedVideo).mtimeMs
@@ -844,7 +868,10 @@ export class ManimSideview {
       const imageMtime = fs.existsSync(predictedImage)
         ? fs.statSync(predictedImage).mtimeMs
         : undefined;
-      if (imageMtime !== undefined && (videoMtime === undefined || imageMtime >= videoMtime)) {
+      if (
+        imageMtime !== undefined &&
+        (videoMtime === undefined || imageMtime >= videoMtime)
+      ) {
         fileType = PlayableMediaType.Image;
         imageName = path.basename(predictedImage);
         mediaPath = predictedImage;
@@ -854,8 +881,9 @@ export class ManimSideview {
       }
       if (fileType !== undefined) {
         Log.info(
-          `[${process.pid}] Render output inferred from filesystem as "${fileType === PlayableMediaType.Image ? "Image" : "Video"
-          }".`
+          `[${process.pid}] Render output inferred from filesystem as "${
+            fileType === PlayableMediaType.Image ? "Image" : "Video"
+          }".`,
         );
       }
     }
@@ -865,15 +893,15 @@ export class ManimSideview {
         // we don't have a prior user input to determine the output type
         const inputFileType = await vscode.window.showWarningMessage(
           Log.warn(
-            `Manim Sideview: Unable to infer the output filetype for "${sceneName}". Please select one below!`
+            `Manim Sideview: Unable to infer the output filetype for "${sceneName}". Please select one below!`,
           ),
           "Video",
-          "Image"
+          "Image",
         );
         if (!inputFileType) {
           this.jobManager.setError(null);
           throw new Error(
-            "Manim Sideview: User did not select an output filetype."
+            "Manim Sideview: User did not select an output filetype.",
           );
         }
         fileType =
@@ -886,7 +914,11 @@ export class ManimSideview {
     }
 
     Log.info(`File type is set to "${fileType}".`);
-    return { fileType: fileType || PlayableMediaType.Video, imageName, mediaPath };
+    return {
+      fileType: fileType || PlayableMediaType.Video,
+      imageName,
+      mediaPath,
+    };
   }
 
   /**
@@ -922,7 +954,7 @@ export class ManimSideview {
    * @returns ManimConfig | undefined
    */
   private async getManimConfigFile(
-    srcfilePath: string
+    srcfilePath: string,
   ): Promise<ManimConfig | undefined> {
     const filePath = this.manimConfPath
       ? this.manimConfPath
@@ -939,8 +971,8 @@ export class ManimSideview {
     } catch (e) {
       vscode.window.showErrorMessage(
         Log.error(
-          `Manim Sideview: Error whilst parsing manim.cfg file, ignoring it. ${e}`
-        )
+          `Manim Sideview: Error whilst parsing manim.cfg file, ignoring it. ${e}`,
+        ),
       );
       return;
     }
@@ -948,8 +980,8 @@ export class ManimSideview {
     if (!parsedConfig.sections().includes(CONFIG_SECTION)) {
       vscode.window.showErrorMessage(
         Log.error(
-          `Manim Sideview: Config file is missing the [${CONFIG_SECTION}] section.`
-        )
+          `Manim Sideview: Config file is missing the [${CONFIG_SECTION}] section.`,
+        ),
       );
       return;
     }
@@ -962,10 +994,10 @@ export class ManimSideview {
       if (parsedConfig.hasKey(CONFIG_SECTION, flag)) {
         manimConfig[flag as keyof ManimConfig] = parsedConfig.get(
           CONFIG_SECTION,
-          flag
+          flag,
         )!;
         Log.info(
-          `Set flag "${flag}" to ${parsedConfig.get(CONFIG_SECTION, flag)}.`
+          `Set flag "${flag}" to ${parsedConfig.get(CONFIG_SECTION, flag)}.`,
         );
       }
     }
@@ -982,7 +1014,7 @@ export class ManimSideview {
     document: vscode.TextDocument,
     sceneName: string,
     isUsingCfgFile: boolean,
-    manimConfig: ManimConfig
+    manimConfig: ManimConfig,
   ): RunningConfig {
     const srcPath = document.uri.fsPath;
     Log.info(`Creating a new running configuration for file "${srcPath}"`);
@@ -999,6 +1031,64 @@ export class ManimSideview {
       document: document,
       sceneName: sceneName,
     };
+  }
+
+  /**
+   * Finds a companion audio file for the rendered video.
+   * Searches: (1) same-directory WAV, (2) same-directory MP3,
+   * (3) media/voiceovers/ folder for scene-matching MP3/WAV files.
+   *
+   * @param videoPath absolute path to the rendered video file
+   * @param srcRootFolder the source file's root folder (project root)
+   * @returns Uri to the audio file, or undefined if none found
+   */
+  private findAudioFile(
+    videoPath: string,
+    srcRootFolder: string,
+  ): vscode.Uri | undefined {
+    if (!getUserConfiguration<boolean>("enableAudio")) {
+      return;
+    }
+
+    // Strategy 1: WAV alongside the video (manim's native audio output)
+    const wavPath = videoPath.replace(/\.mp4$/i, ".wav");
+    if (fs.existsSync(wavPath)) {
+      Log.info(`Found audio WAV at "${wavPath}".`);
+      return vscode.Uri.file(wavPath);
+    }
+
+    // Strategy 2: MP3 alongside the video
+    const mp3Path = videoPath.replace(/\.mp4$/i, ".mp3");
+    if (fs.existsSync(mp3Path)) {
+      Log.info(`Found audio MP3 at "${mp3Path}".`);
+      return vscode.Uri.file(mp3Path);
+    }
+
+    // Strategy 3: Search media/voiceovers/ for MP3/WAV files
+    const voiceoversDir = path.join(srcRootFolder, "media", "voiceovers");
+    if (fs.existsSync(voiceoversDir)) {
+      try {
+        const sceneName = path.basename(videoPath, ".mp4");
+        const files = fs.readdirSync(voiceoversDir);
+        // Prefer exact scene name match, then partial match
+        for (const file of files) {
+          const ext = path.extname(file).toLowerCase();
+          if (ext !== ".mp3" && ext !== ".wav") {
+            continue;
+          }
+          const baseName = path.basename(file, ext);
+          if (baseName === sceneName || baseName.startsWith(sceneName)) {
+            const fullPath = path.join(voiceoversDir, file);
+            Log.info(`Found voiceover audio at "${fullPath}".`);
+            return vscode.Uri.file(fullPath);
+          }
+        }
+      } catch {
+        // voiceovers dir exists but can't be read — skip silently
+      }
+    }
+
+    return;
   }
 
   private async checkExecutableExists(path: string): Promise<boolean> {

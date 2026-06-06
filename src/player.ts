@@ -19,16 +19,16 @@ export const PlayableMediaType = {
 export class MediaPlayer {
   constructor(
     public readonly extensionUri: vscode.Uri,
-    public readonly disposables: any[]
+    public readonly disposables: any[],
   ) {
     this.manimIconsPath = {
       dark: vscode.Uri.joinPath(
         this.extensionUri,
-        "assets/images/dark_logo.png"
+        "assets/images/dark_logo.png",
       ),
       light: vscode.Uri.joinPath(
         this.extensionUri,
-        "assets/images/light_logo.png"
+        "assets/images/light_logo.png",
       ),
     };
   }
@@ -59,18 +59,27 @@ export class MediaPlayer {
   async playMedia(
     mediaUri: vscode.Uri,
     config: RunningConfig,
-    mediaType: number
+    mediaType: number,
+    audioUri?: vscode.Uri,
   ) {
     if (this.recentMediaPanel) {
       const resource = this.asCacheBreakingWebviewUri(
         this.recentMediaPanel.webview,
-        mediaUri
+        mediaUri,
       );
+      const audioResource = audioUri
+        ? this.asCacheBreakingWebviewUri(
+            this.recentMediaPanel.webview,
+            audioUri,
+          )
+        : undefined;
       Log.info(`Reloading media to URI "${mediaUri.fsPath}"`);
       return this.recentMediaPanel.webview.postMessage({
         command: "reload",
         mediaType: mediaType,
         resource: resource,
+        audioResource: audioResource,
+        hasAudio: !!audioResource,
         outputFile: mediaUri.fsPath,
         sourceFile: config.srcPath,
         moduleName: config.sceneName,
@@ -87,19 +96,19 @@ export class MediaPlayer {
         localResourceRoots: [
           vscode.Uri.joinPath(
             vscode.Uri.file(config.document.uri.fsPath),
-            "../"
+            "../",
           ),
           this.extensionUri,
         ],
         enableScripts: true,
-      }
+      },
     );
 
     const engine = new TemplateEngine(
       panel.webview,
       getWebviewResource(this.extensionUri, "player"),
       "player",
-      this.extensionUri
+      this.extensionUri,
     );
     // the property key to set the resource url to
     const srcReplacementKey =
@@ -117,13 +126,30 @@ export class MediaPlayer {
       videoHideState = "hidden";
     }
     panel.iconPath = this.manimIconsPath;
+
+    // Background audio: build template variables for the hidden <audio> element.
+    const enableAudio = getUserConfiguration<boolean>("enableAudio");
+    const hasAudio =
+      enableAudio && !!audioUri && mediaType === PlayableMediaType.Video;
+    const audioSrcAttr = hasAudio
+      ? `src="${this.asCacheBreakingWebviewUri(panel.webview, audioUri!)}"`
+      : "";
+    const audioLoop =
+      hasAudio && getUserConfiguration("previewLooping") ? "loop" : "";
+    const audioHideState = hasAudio ? "" : "hidden";
+    const volumeVisibility = hasAudio ? "" : "hidden";
+
     panel.webview.html = await engine.render({
       [srcReplacementKey]: this.asCacheBreakingWebviewUri(
         panel.webview,
-        mediaUri
+        mediaUri,
       ),
       imageHideState,
       videoHideState,
+      audioSrcAttr,
+      audioLoop,
+      audioHideState,
+      volumeVisibility,
       background: getUserConfiguration("checkeredBackground")
         ? "checkered-bg"
         : "",
@@ -131,12 +157,12 @@ export class MediaPlayer {
       sourceFile: config.srcPath,
       moduleName: config.sceneName,
       previewShowProgressOnIdle: getUserConfiguration(
-        "previewShowProgressOnIdle"
+        "previewShowProgressOnIdle",
       )
         ? ""
         : "hidden-controls",
       previewProgressStyle: this.parseProgressStyle(
-        getUserConfiguration("previewProgressColor")
+        getUserConfiguration("previewProgressColor"),
       ),
       loop: getUserConfiguration("previewLooping") ? "loop" : "",
       autoplay: getUserConfiguration("previewAutoPlay") ? "autoplay muted" : "",
@@ -149,11 +175,11 @@ export class MediaPlayer {
           // Executes a manim-sideview command and then executes run command
           case "executeSelfCommand":
             Log.info(
-              `Executing command "manim-sideview.${message.name}" for webview.`
+              `Executing command "manim-sideview.${message.name}" for webview.`,
             );
             vscode.commands.executeCommand(
               `manim-sideview.${message.name}`,
-              ...message.args
+              ...message.args,
             );
             break;
           case "errorMessage":
@@ -162,7 +188,7 @@ export class MediaPlayer {
         }
       },
       undefined,
-      this.disposables
+      this.disposables,
     );
 
     panel.onDidDispose(
@@ -172,7 +198,7 @@ export class MediaPlayer {
         }
       },
       undefined,
-      this.disposables
+      this.disposables,
     );
 
     this.recentMediaPanel = panel;

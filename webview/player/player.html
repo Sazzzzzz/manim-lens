@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <title>Player</title>
@@ -15,8 +15,12 @@
       <!-- Video Player -->
       <div {{ videoHideState }} id="video-media-player" class="media-player">
         <video
-          {{ autoplay }}
-          {{ loop }}
+          {{
+          autoplay
+          }}
+          {{
+          loop
+          }}
           id="video-preview"
           src="{{ videoDir }}"
           tabindex="0"
@@ -26,6 +30,21 @@
       <div {{ imageHideState }} id="image-media-player" class="media-player">
         <img src="{{ imageDir }}" id="image-preview" />
       </div>
+
+      <!-- Audio Track (background audio) - hidden, synced with muted video -->
+      <audio
+        {{
+        audioHideState
+        }}
+        id="audio-track"
+        preload="auto"
+        {{
+        audioSrcAttr
+        }}
+        {{
+        audioLoop
+        }}
+      ></audio>
 
       <!-- ==== NEW CONTROL BAR ==== -->
       <div class="controls-container">
@@ -70,7 +89,7 @@
                 />
               </svg>
             </button>
-            <div class="volume-container" style="display: none">
+            <div class="volume-container {{ volumeVisibility }}">
               <button
                 class="control-button"
                 id="volume-button"
