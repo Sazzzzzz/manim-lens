@@ -20,7 +20,6 @@ import {
 
 import { JobStatusManager } from "./job";
 import { MediaPlayer, PlayableMediaType } from "./player";
-import { Gallery } from "./gallery";
 import { PythonExtension } from "@vscode/python-extension";
 import { window } from "vscode";
 
@@ -68,7 +67,6 @@ export class ManimSideview {
       this.ctx.extensionUri,
       this.ctx.subscriptions,
     );
-    this.gallery = new Gallery(this.ctx.extensionUri, this.ctx.subscriptions);
 
     // Detect when a render has finished executing in the terminal
     this.ctx.subscriptions.push(
@@ -87,7 +85,6 @@ export class ManimSideview {
   private jobManager: JobStatusManager;
   private previousSceneNames: { [fsPath: string]: string } = {};
   private mediaPlayer: MediaPlayer;
-  public gallery: Gallery;
 
   // Terminal-based rendering (replaces the old spawn + pseudoTerm approach)
   private mainTerminal: vscode.Terminal | undefined;
@@ -241,10 +238,6 @@ export class ManimSideview {
     }
     job.config.sceneName = newSceneName;
     this.cmdRun(runningCfgSrcPath);
-  }
-
-  auditTextEditorChange(editor: vscode.TextEditor) {
-    this.gallery.setLastActiveEditor(editor);
   }
 
   private async getRenderSceneName(

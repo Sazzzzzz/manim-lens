@@ -17,7 +17,7 @@ export class Log {
   static logs(
     level: string,
     msg: string,
-    formatter: FormatHandlerFn = Log.format
+    formatter: FormatHandlerFn = Log.format,
   ) {
     LOGGER.appendLine(formatter(level, msg));
     return msg;
@@ -92,14 +92,14 @@ export type RunningConfig = {
 
 export function getVideoOutputPath(
   config: RunningConfig,
-  extension: string = ".mp4"
+  extension: string = ".mp4",
 ) {
   if (config.manimConfig.pixel_height && config.manimConfig.pixel_width) {
     var quality = `${config.manimConfig.pixel_height}p${config.manimConfig.frame_rate}`;
   } else {
     if (
       !Object.keys(DEFAULT_CONFIG.quality_map).includes(
-        config.manimConfig.quality
+        config.manimConfig.quality,
       )
     ) {
       vscode.window.showErrorMessage(
@@ -107,9 +107,9 @@ export function getVideoOutputPath(
           `Manim Sideview: Quality set as "${
             config.manimConfig.quality
           }" is invalid. It must be one of [${Object.keys(
-            DEFAULT_CONFIG.quality_map
-          ).join(", ")}].`
-        )
+            DEFAULT_CONFIG.quality_map,
+          ).join(", ")}].`,
+        ),
       );
       throw new Error("Invalid quality provided.");
     }
@@ -122,7 +122,7 @@ export function getVideoOutputPath(
       "{media_dir}": config.manimConfig.media_dir,
       "{module_name}": config.moduleName,
     },
-    path.join(config.manimConfig.video_dir, `${config.sceneName}${extension}`)
+    path.join(config.manimConfig.video_dir, `${config.sceneName}${extension}`),
   );
 }
 
@@ -135,7 +135,7 @@ export function getVideoOutputPath(
 export function getImageOutputPath(
   config: RunningConfig,
   loggedImageName?: string,
-  extension: string = ".png"
+  extension: string = ".png",
 ) {
   return insertContext(
     {
@@ -148,8 +148,8 @@ export function getImageOutputPath(
     },
     path.join(
       config.manimConfig.images_dir,
-      loggedImageName || DEFAULT_CONFIG.image_name
-    )
+      loggedImageName || DEFAULT_CONFIG.image_name,
+    ),
   );
 }
 
@@ -194,7 +194,7 @@ export function updateFallbackManimCfg(
   updated: {
     [tp: string]: any;
   },
-  saveUpdated: boolean = true
+  saveUpdated: boolean = true,
 ) {
   Object.keys(DEFAULT_CONFIG).forEach((ky) => {
     if (updated[ky]) {
@@ -206,7 +206,7 @@ export function updateFallbackManimCfg(
     fs.writeFile(
       PATHS.cfgMap!.fsPath,
       JSON.stringify(DEFAULT_CONFIG),
-      () => {}
+      () => {},
     );
   }
 }
@@ -220,9 +220,6 @@ export async function loadGlobals(ctx: vscode.ExtensionContext) {
 
   const pathsToLoad: { [tp: string]: string } = {
     cfgMap: "assets/local/manim.cfg.json",
-    mobjVersion: "assets/mobjects/mobject_version.txt",
-    mobjGalleryParameters: "assets/mobjects/gallery_parameters.json",
-    mobjImgs: "assets/mobjects/",
   };
 
   Object.keys(pathsToLoad).forEach((tp) => {
@@ -230,15 +227,15 @@ export async function loadGlobals(ctx: vscode.ExtensionContext) {
   });
 
   const cfg = JSON.parse(
-    (await vscode.workspace.fs.readFile(PATHS.cfgMap!)).toString()
+    (await vscode.workspace.fs.readFile(PATHS.cfgMap!)).toString(),
   );
   updateFallbackManimCfg(cfg, false);
   PACKAGE_JSON = JSON.parse(
     fs
       .readFileSync(
-        vscode.Uri.joinPath(ctx.extensionUri, "package.json").fsPath
+        vscode.Uri.joinPath(ctx.extensionUri, "package.json").fsPath,
       )
-      .toString()
+      .toString(),
   );
   EXTENSION_VERSION = PACKAGE_JSON["version"];
   Log.info("Successfully loaded all globals.");
@@ -289,17 +286,17 @@ export function insertContext(context: ContextVars, payload: string): string {
  */
 export function getWebviewResource(
   extensionUri: vscode.Uri,
-  viewName: string
+  viewName: string,
 ): WebviewResources {
   return {
     css: vscode.Uri.joinPath(
       extensionUri,
-      `webview/${viewName}/${viewName}.css`
+      `webview/${viewName}/${viewName}.css`,
     ),
     js: vscode.Uri.joinPath(extensionUri, `webview/${viewName}/${viewName}.js`),
     html: vscode.Uri.joinPath(
       extensionUri,
-      `webview/${viewName}/${viewName}.html`
+      `webview/${viewName}/${viewName}.html`,
     ),
   };
 }

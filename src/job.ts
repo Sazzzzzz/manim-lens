@@ -24,11 +24,11 @@ type Job = {
 export class JobStatusManager {
   constructor() {
     this.jobStatusItem = vscode.window.createStatusBarItem(
-      vscode.StatusBarAlignment.Left
+      vscode.StatusBarAlignment.Left,
     );
     this.jobStatusItem.name = "job-indicator";
     this.jobStatusItem.command = "manim-sideview.removeCurrentJob";
-    this.jobStatusItem.tooltip = "Mainm Sideview - Press to discard.";
+    this.jobStatusItem.tooltip = "Manim Sideview - Press to discard.";
   }
 
   private jobStatusItem: vscode.StatusBarItem;
@@ -72,7 +72,9 @@ export class JobStatusManager {
         Log.info(`No active editor or language is not python.`);
         return null;
       }
-      Log.info(`Getting active job for file ${editor.document.fileName}. Active Jobs: ${Object.keys(this.activeJobs)}`);
+      Log.info(
+        `Getting active job for file ${editor.document.fileName}. Active Jobs: ${Object.keys(this.activeJobs)}`,
+      );
       return this.activeJobs[editor.document.fileName];
     }
   }
@@ -83,7 +85,7 @@ export class JobStatusManager {
 
   setNew() {
     this.jobStatusItem.backgroundColor = new vscode.ThemeColor(
-      "button.hoverBackground"
+      "button.hoverBackground",
     );
     this.setIcon("$(vm-active)");
     this.setVisibility(true);

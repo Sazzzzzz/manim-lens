@@ -28,12 +28,6 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("manim-sideview.removeCurrentJob", () =>
       sideview.cmdRemoveJob(),
     ),
-    vscode.commands.registerCommand("manim-sideview.showMobjectGallery", () =>
-      sideview.gallery.show(),
-    ),
-    vscode.commands.registerCommand("manim-sideview.syncMobjectGallery", () =>
-      sideview.gallery.synchronize(true),
-    ),
     vscode.commands.registerCommand(
       "manim-sideview.updateDefaultManimConfig",
       () => sideview.cmdUpdateDefaultManimConfig(),
@@ -61,12 +55,6 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.executeCommand("manim-sideview.run", e.fileName, true);
       }
     },
-    null,
-    context.subscriptions,
-  );
-
-  vscode.window.onDidChangeTextEditorSelection(
-    (e) => sideview.auditTextEditorChange(e.textEditor),
     null,
     context.subscriptions,
   );

@@ -6,7 +6,7 @@ export class TemplateEngine {
     public readonly webview: vscode.Webview,
     public readonly resource: WebviewResources,
     public readonly name: String,
-    public readonly extensionUri: vscode.Uri
+    public readonly extensionUri: vscode.Uri,
   ) {
     this.resMap = {
       js: ` ${this.name}.js`,
@@ -32,7 +32,7 @@ export class TemplateEngine {
   static async renderDoc(fp: vscode.Uri, globals: { [varname: string]: any }) {
     return TemplateEngine.textRender(
       (await vscode.workspace.fs.readFile(fp)).toString(),
-      globals
+      globals,
     );
   }
 
@@ -47,7 +47,7 @@ export class TemplateEngine {
       } else {
         text = text.replace(
           new RegExp(`{{ ${varname} }}`, "gi"),
-          globals[varname]
+          globals[varname],
         );
       }
     });
@@ -70,9 +70,9 @@ export class TemplateEngine {
     return TemplateEngine.textRender(
       TemplateEngine.textRender(
         (await vscode.workspace.fs.readFile(this.resource.html)).toString(),
-        this.preamble
+        this.preamble,
       ),
-      globals
+      globals,
     );
   }
 }

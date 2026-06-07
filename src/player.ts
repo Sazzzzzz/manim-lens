@@ -52,8 +52,8 @@ export class MediaPlayer {
     return `style="background-color: ${colorStr}"`;
   }
 
-  asCacheBreakingWebviewUri(webveiw: vscode.Webview, uri: vscode.Uri) {
-    return `${webveiw.asWebviewUri(uri).toString()}?t=${new Date().getTime()}`;
+  asCacheBreakingWebviewUri(webview: vscode.Webview, uri: vscode.Uri) {
+    return `${webview.asWebviewUri(uri).toString()}?t=${new Date().getTime()}`;
   }
 
   async playMedia(

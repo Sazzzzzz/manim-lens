@@ -26,18 +26,6 @@
     "animations",
     "manim sideview"
   ],
-  "activationEvents": [
-    "onCommand:manim-sideview.run",
-    "onCommand:manim-sideview.stop",
-    "onCommand:manim-sideview.removeAllJobs",
-    "onCommand:manim-sideview.removeCurrentJob",
-    "onCommand:manim-sideview.renderNewScene",
-    "onCommand:manim-sideview.showMobjectGallery",
-    "onCommand:manim-sideview.syncMobjectGallery",
-    "onCommand:manim-sideview.updateDefaultManimConfig",
-    "onCommand:manim-sideview.showOutputChannel",
-    "onCommand:manim-sideview.showExtensionManimConfig"
-  ],
   "extensionDependencies": [
     "ms-python.python"
   ],
@@ -140,14 +128,6 @@
         "title": "Manim: Render a New Scene"
       },
       {
-        "command": "manim-sideview.showMobjectGallery",
-        "title": "Manim: Open Mobject Gallery"
-      },
-      {
-        "command": "manim-sideview.syncMobjectGallery",
-        "title": "Manim: Find Mobject Gallery Updates"
-      },
-      {
         "command": "manim-sideview.updateDefaultManimConfig",
         "title": "Manim: Sync Internal Manim Config with Local Executable"
       },
@@ -204,8 +184,6 @@
   },
   "dependencies": {
     "@vscode/python-extension": "^1.0.5",
-    "axios": "^1.3.2",
-    "configparser": "^0.3.10",
-    "yaml": "^2.2.1"
+    "configparser": "^0.3.10"
   }
 }
