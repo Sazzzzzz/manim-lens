@@ -423,9 +423,10 @@ export class ManimSideview {
       "close",
       function (_code: number | null, _signal: NodeJS.Signals | null) {
         const payload = fullStdout
-          .split("\r\n\r\n\r\n")
+          .replace(/\r\n/g, "\n")
+          .split("\n\n\n")
           .find((p) => p.includes("CLI"))
-          ?.replace(/\r\n/g, " ");
+          ?.replace(/\n/g, " ");
         if (!payload) {
           return;
         }
