@@ -12,31 +12,31 @@ export async function activate(context: vscode.ExtensionContext) {
   const sideview = new ManimSideview(context, pythonApi);
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("manim-sideview.run", (...args) =>
+    vscode.commands.registerCommand("manim-lens.run", (...args) =>
       sideview.cmdRun(...args),
     ),
-    vscode.commands.registerCommand("manim-sideview.removeAllJobs", () =>
+    vscode.commands.registerCommand("manim-lens.removeAllJobs", () =>
       sideview.cmdRemoveAllJobs(),
     ),
-    vscode.commands.registerCommand("manim-sideview.stop", () =>
+    vscode.commands.registerCommand("manim-lens.stop", () =>
       sideview.cmdStop(),
     ),
     vscode.commands.registerCommand(
-      "manim-sideview.renderNewScene",
+      "manim-lens.renderNewScene",
       (...args) => sideview.cmdRenderNewScene(...args),
     ),
-    vscode.commands.registerCommand("manim-sideview.removeCurrentJob", () =>
+    vscode.commands.registerCommand("manim-lens.removeCurrentJob", () =>
       sideview.cmdRemoveJob(),
     ),
     vscode.commands.registerCommand(
-      "manim-sideview.updateDefaultManimConfig",
+      "manim-lens.updateDefaultManimConfig",
       () => sideview.cmdUpdateDefaultManimConfig(),
     ),
-    vscode.commands.registerCommand("manim-sideview.showOutputChannel", () =>
+    vscode.commands.registerCommand("manim-lens.showOutputChannel", () =>
       LOGGER.show(true),
     ),
     vscode.commands.registerCommand(
-      "manim-sideview.showExtensionManimConfig",
+      "manim-lens.showExtensionManimConfig",
       () =>
         vscode.workspace
           .openTextDocument(
@@ -52,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
         getUserConfiguration<boolean>("runOnSave") &&
         e.fileName.endsWith(".py")
       ) {
-        vscode.commands.executeCommand("manim-sideview.run", e.fileName, true);
+        vscode.commands.executeCommand("manim-lens.run", e.fileName, true);
       }
     },
     null,

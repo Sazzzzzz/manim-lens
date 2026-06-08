@@ -1,19 +1,19 @@
 {
-  "name": "manim-sideview",
-  "displayName": "Manim Sideview",
+  "name": "manim-lens",
+  "displayName": "Manim Lens",
   "icon": "assets/images/logo.png",
   "description": "Video/Image live previews and code snippets for manim.",
   "repository": {
-    "url": "https://github.com/Rickaym/Manim-Sideview",
+    "url": "https://github.com/Sazzzzzz/manim-lens",
     "type": "git",
     "directory": "src"
   },
   "author": {
-    "name": "Ricky",
-    "url": "https://github.com/Rickaym"
+    "name": "Caffein3",
+    "url": "https://github.com/Sazzzzzz"
   },
-  "version": "0.3.1",
-  "publisher": "Rickaym",
+  "version": "0.0.1",
+  "publisher": "Caffein3",
   "engines": {
     "vscode": "^1.93.0"
   },
@@ -24,7 +24,7 @@
   "keywords": [
     "manim",
     "animations",
-    "manim sideview"
+    "manim lens"
   ],
   "extensionDependencies": [
     "ms-python.python"
@@ -33,60 +33,60 @@
   "contributes": {
     "configuration": {
       "properties": {
-        "manim-sideview.defaultManimPath": {
+        "manim-lens.defaultManimPath": {
           "type": "string",
           "default": "manim",
           "description": "Specify the absolute path to the Manim executable file."
         },
-        "manim-sideview.commandLineArgs": {
+        "manim-lens.commandLineArgs": {
           "type": "string",
           "description": "Input additional command line arguments for Manim. Refer to Manim documentation for options. Use the config file for quality args like 'ql'."
         },
-        "manim-sideview.runOnSave": {
+        "manim-lens.runOnSave": {
           "type": "boolean",
           "default": "false",
           "description": "Enable or disable the automatic running of a previously run file upon saving."
         },
-        "manim-sideview.previewShowProgressOnIdle": {
+        "manim-lens.previewShowProgressOnIdle": {
           "type": "boolean",
           "default": "true",
           "description": "Choose whether to show the video progress bar in the player while the job is idle."
         },
-        "manim-sideview.previewProgressColor": {
+        "manim-lens.previewProgressColor": {
           "type": "string",
           "default": "textLink.foreground",
           "description": "Define the progress bar color, using either hex codes (e.g., `#F1F1F1`) or theme color names (e.g., `button.border`)."
         },
-        "manim-sideview.previewAutoPlay": {
+        "manim-lens.previewAutoPlay": {
           "type": "boolean",
           "default": "true",
           "description": "Decide whether to automatically play the video or not when it is ready."
         },
-        "manim-sideview.previewLooping": {
+        "manim-lens.previewLooping": {
           "type": "boolean",
           "default": "true",
           "description": "Enable or disable continuous looping of the video preview."
         },
-        "manim-sideview.manimExecutableVersion": {
+        "manim-lens.manimExecutableVersion": {
           "type": "string",
           "default": "v0.16.0.post0",
           "description": "Specify the version of the Manim executable used by the extension."
         },
-        "manim-sideview.terminalCommand": {
+        "manim-lens.terminalCommand": {
           "type": "string",
           "description": "Define a terminal command to run post-render. Use variables: {outputPath}, {sourcePath}, and {sceneName} as needed."
         },
-        "manim-sideview.preview": {
+        "manim-lens.preview": {
           "type": "boolean",
           "default": "true",
           "description": "Display the preview after rendering. This should be enabled at all times except for when you're using the extension solely to render."
         },
-        "manim-sideview.checkeredBackground": {
+        "manim-lens.checkeredBackground": {
           "type": "boolean",
           "default": "true",
           "description": "Show a checkered background behind the video preview."
         },
-        "manim-sideview.enableAudio": {
+        "manim-lens.enableAudio": {
           "type": "boolean",
           "default": "true",
           "description": "Play audio from a separate WAV/MP3 file alongside the video preview. The WAV is generated alongside the MP4 by manim, or an MP3 from the media/voiceovers folder by manim-voiceover."
@@ -96,7 +96,7 @@
     "menus": {
       "editor/title": [
         {
-          "command": "manim-sideview.run",
+          "command": "manim-lens.run",
           "when": "editorIsOpen && editorLangId == python",
           "group": "navigation"
         }
@@ -104,7 +104,7 @@
     },
     "commands": [
       {
-        "command": "manim-sideview.run",
+        "command": "manim-lens.run",
         "title": "Manim: Runs a Sideview",
         "icon": {
           "light": "./assets/images/rotation.png",
@@ -112,47 +112,47 @@
         }
       },
       {
-        "command": "manim-sideview.stop",
+        "command": "manim-lens.stop",
         "title": "Manim: Terminate Running Processes"
       },
       {
-        "command": "manim-sideview.removeAllJobs",
+        "command": "manim-lens.removeAllJobs",
         "title": "Manim: Clear All Active Jobs"
       },
       {
-        "command": "manim-sideview.removeCurrentJob",
+        "command": "manim-lens.removeCurrentJob",
         "title": "Manim: Cancel Active Job of Current File"
       },
       {
-        "command": "manim-sideview.renderNewScene",
+        "command": "manim-lens.renderNewScene",
         "title": "Manim: Render a New Scene"
       },
       {
-        "command": "manim-sideview.updateDefaultManimConfig",
+        "command": "manim-lens.updateDefaultManimConfig",
         "title": "Manim: Sync Internal Manim Config with Local Executable"
       },
       {
-        "command": "manim-sideview.showOutputChannel",
+        "command": "manim-lens.showOutputChannel",
         "title": "Manim: Show Output Channel"
       },
       {
-        "command": "manim-sideview.showExtensionManimConfig",
+        "command": "manim-lens.showExtensionManimConfig",
         "title": "Manim: Show Internal Manim Config"
       }
     ],
     "keybindings": [
       {
-        "command": "manim-sideview.run",
+        "command": "manim-lens.run",
         "key": "ctrl+' r",
         "when": "editorFocus"
       },
       {
-        "command": "manim-sideview.stop",
+        "command": "manim-lens.stop",
         "key": "ctrl+' x",
         "when": "editorFocus"
       },
       {
-        "command": "manim-sideview.renderNewScene",
+        "command": "manim-lens.renderNewScene",
         "key": "ctrl+' c"
       }
     ]

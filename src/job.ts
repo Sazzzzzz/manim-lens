@@ -27,7 +27,7 @@ export class JobStatusManager {
       vscode.StatusBarAlignment.Left,
     );
     this.jobStatusItem.name = "job-indicator";
-    this.jobStatusItem.command = "manim-sideview.removeCurrentJob";
+    this.jobStatusItem.command = "manim-lens.removeCurrentJob";
     this.jobStatusItem.tooltip = "Manim Sideview - Press to discard.";
   }
 

@@ -172,13 +172,13 @@ export class MediaPlayer {
     panel.webview.onDidReceiveMessage(
       (message) => {
         switch (message.command) {
-          // Executes a manim-sideview command and then executes run command
+          // Executes a manim-lens command and then executes run command
           case "executeSelfCommand":
             Log.info(
-              `Executing command "manim-sideview.${message.name}" for webview.`,
+              `Executing command "manim-lens.${message.name}" for webview.`,
             );
             vscode.commands.executeCommand(
-              `manim-sideview.${message.name}`,
+              `manim-lens.${message.name}`,
               ...message.args,
             );
             break;

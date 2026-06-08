@@ -162,13 +162,13 @@ export function getImageOutputPath(
  */
 export function getUserConfiguration<T>(property: string): T {
   let value: T | undefined = vscode.workspace
-    .getConfiguration("manim-sideview")
+    .getConfiguration("manim-lens")
     .get(property);
 
   if (value === undefined) {
     const propertyDict =
       PACKAGE_JSON["contributes"]["configuration"]["properties"][
-        `manim-sideview.${property}`
+        `manim-lens.${property}`
       ];
     if (propertyDict["type"] === "boolean") {
       return (propertyDict["default"] === "true"

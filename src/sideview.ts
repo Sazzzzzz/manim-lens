@@ -396,7 +396,7 @@ export class ManimSideview {
           if (selection === "Go to Settings") {
             vscode.commands.executeCommand(
               "workbench.action.openSettings",
-              "manim-sideview.defaultManimPath",
+              "manim-lens.defaultManimPath",
             );
           }
         });
@@ -626,7 +626,7 @@ export class ManimSideview {
           .then((value?: String) =>
             value === "Show Log"
               ? vscode.commands.executeCommand(
-                  "manim-sideview.showOutputChannel",
+                  "manim-lens.showOutputChannel",
                 )
               : null,
           );

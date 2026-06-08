@@ -1,3 +1,8 @@
+# Manim Lens
+
+a work in progress extension called Manim Lens.
+Forked from [Rickaym's Manim Sideview extension](https://github.com/Rickaym/Manim-Sideview)
+
 # Manim Sideview
 
 <img src="https://repository-images.githubusercontent.com/429329947/d3f3cf71-a491-47e0-a629-34e0a4b9051f" height="100%" width="300px">
