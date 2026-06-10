@@ -21,28 +21,24 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("manim-lens.stop", () =>
       sideview.cmdStop(),
     ),
-    vscode.commands.registerCommand(
-      "manim-lens.renderNewScene",
-      (...args) => sideview.cmdRenderNewScene(...args),
+    vscode.commands.registerCommand("manim-lens.renderNewScene", (...args) =>
+      sideview.cmdRenderNewScene(...args),
     ),
     vscode.commands.registerCommand("manim-lens.removeCurrentJob", () =>
       sideview.cmdRemoveJob(),
     ),
-    vscode.commands.registerCommand(
-      "manim-lens.updateDefaultManimConfig",
-      () => sideview.cmdUpdateDefaultManimConfig(),
+    vscode.commands.registerCommand("manim-lens.updateDefaultManimConfig", () =>
+      sideview.cmdUpdateDefaultManimConfig(),
     ),
     vscode.commands.registerCommand("manim-lens.showOutputChannel", () =>
       LOGGER.show(true),
     ),
-    vscode.commands.registerCommand(
-      "manim-lens.showExtensionManimConfig",
-      () =>
-        vscode.workspace
-          .openTextDocument(
-            path.join(context.extensionPath, "./assets/local/manim.cfg.json"),
-          )
-          .then((doc) => vscode.window.showTextDocument(doc)),
+    vscode.commands.registerCommand("manim-lens.showExtensionManimConfig", () =>
+      vscode.workspace
+        .openTextDocument(
+          path.join(context.extensionPath, "./assets/local/manim.cfg.json"),
+        )
+        .then((doc) => vscode.window.showTextDocument(doc)),
     ),
   );
 

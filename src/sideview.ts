@@ -559,7 +559,9 @@ export class ManimSideview {
     this.activeRenderConfig = config;
 
     const terminal = this.getOrCreateMainTerminal();
-    terminal.show(true);
+    if (getUserConfiguration<boolean>("alwaysShowTerminal")) {
+      terminal.show();
+    }
 
     this.jobManager.addJob(config, PlayableMediaType.Video);
 
@@ -625,9 +627,7 @@ export class ManimSideview {
           )
           .then((value?: String) =>
             value === "Show Log"
-              ? vscode.commands.executeCommand(
-                  "manim-lens.showOutputChannel",
-                )
+              ? vscode.commands.executeCommand("manim-lens.showOutputChannel")
               : null,
           );
         const job = this.jobManager.getActiveJob(srcPath);
